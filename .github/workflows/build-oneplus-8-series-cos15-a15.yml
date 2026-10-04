@@ -1,4 +1,4 @@
-name: Build OnePlus 8 Series (ColorOS 15 A15)
+name: Build Reno5Pro+ Series (ColorOS 13 A13)
 
 on:
   workflow_call:
