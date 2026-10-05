@@ -60,7 +60,7 @@ env:
   PATCHES_BRANCH: "op_kernel"
 
   # ⚠️ 改成 kona_cos13_a13，如果找不到就先把 SUSFS 关掉
-  SUSFS_FOLDER_FIXED: "kona_cos13_a13"
+  SUSFS_FOLDER_FIXED: "kona_oos"
   SUSFS_PATCH_FIXED: "susfs_fixed"
 
   REKERNEL_ENABLE: "false"
