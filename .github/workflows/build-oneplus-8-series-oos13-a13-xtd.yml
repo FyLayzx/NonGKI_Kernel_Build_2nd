@@ -6,14 +6,14 @@ on:
 
 env:
   # Device env
-  DEVICE_NAME : "oneplus_8_cn"
-  DEVICE_CODENAME : "instantnoodle"
+  DEVICE_NAME : "Reno5ProPlus"
+  DEVICE_CODENAME : "Kona"
 
   CUSTOM_CMDS : "BRAND_SHOW_FLAG=oneplus CLANG_TRIPLE=aarch64-linux-gnu-"
   EXTRA_CMDS : "LD=ld.lld"
 
-  KERNEL_SOURCE: "https://github.com/JackA1ltman/android_kernel_oneplus_sm8250_los_noksu.git"
-  KERNEL_BRANCH: "upstream-latest"
+  KERNEL_SOURCE: "https://github.com/youngguo18/android_kernel_OPPO_sm8250.git"
+  KERNEL_BRANCH: "stock/13.1"
 
   CLANG_SOURCE : "https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.7/LLVM-19.1.7-Linux-X64.tar.xz"
   CLANG_BRANCH : ""
