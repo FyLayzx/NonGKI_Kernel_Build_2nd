@@ -13,8 +13,8 @@ env:
   EXTRA_CMDS : "BRAND_SHOW_FLAG=oneplus LD=ld.lld LLVM=1 LLVM_IAS=1"
 
   # ============ 内核源码 ============
-  KERNEL_SOURCE : "https://github.com/anrui2032/android_kernel_oppo_sm8250.git"
-  KERNEL_BRANCH : "oppo/sm8250_t_13.0.0_1220"            # 用 FyLayzx 的分支，注意要和 ROM_TEXT 匹配
+  KERNEL_SOURCE : "https://github.com/youngguo18/android_kernel_OPPO_sm8250.git"
+  KERNEL_BRANCH : "stock/13.1"            # 用 FyLayzx 的分支，注意要和 ROM_TEXT 匹配
 
   CLANG_SOURCE : "https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.0/LLVM-20.1.0-Linux-X64.tar.xz"
   CLANG_BRANCH : ""
