@@ -118,86 +118,58 @@ jobs:
 
       # ============================================================
       # 修复 KernelSU 集成后 selinux/hooks.c 里 rc 未声明的问题
+      # 简化版：在第一处 rc 使用前插入一次 int rc = 0;（两处共用同一作用域）
       # ============================================================
       - name: 🔧 Fix KernelSU selinux rc declaration
         run: |
           cd $GITHUB_WORKSPACE/device_kernel
-          echo "=== 修复前 ==="
-          grep -n "rc = security_bounded_transition\|rc = strcmp(\"u:r:init:s0\"" security/selinux/hooks.c || echo "未找到 KSU rc 调用"
+          echo "=== 修复前：rc 使用位置 ==="
+          grep -n "rc = security_bounded_transition\|rc = strcmp(\"u:r:init:s0\"" security/selinux/hooks.c || echo "未找到"
 
           python3 << 'PYEOF'
           import re
 
           path = "security/selinux/hooks.c"
           with open(path) as f:
-              content = f.read()
+              lines = f.readlines()
 
-          # 第 1 步：先清掉之前插错的 KSU_FIX
-          content = content.replace('\tint rc = 0; /* KSU_FIX */\n', '')
-          content = content.replace('\tint rc = 0; /* KSU_FIX */', '')
+          # 第 1 步：清掉之前插错的 KSU_FIX 行
+          lines = [l for l in lines if 'KSU_FIX' not in l]
 
-          # 第 2 步：找到所有 KSU 补丁里用 rc 的位置
-          rc_uses = []
-          for m in re.finditer(r'rc\s*=\s*(?:security_bounded_transition|strcmp\s*\(\s*"u:r:init:s0")', content):
-              rc_uses.append(m.start())
+          # 第 2 步：找所有 rc 使用位置
+          rc_lines = []
+          for i, line in enumerate(lines):
+              if re.search(r'rc\s*=\s*(?:security_bounded_transition|strcmp\s*\(\s*"u:r:init:s0")', line):
+                  rc_lines.append(i)
 
-          if not rc_uses:
-              print("✅ 未找到需要修复的 KSU rc 调用，跳过")
-              with open(path, "w") as f:
-                  f.write(content)
-              exit(0)
+          if not rc_lines:
+              print("✅ 未找到 KSU rc 调用，跳过")
+          else:
+              print(f"📍 找到 {len(rc_lines)} 处 rc 调用，行号: {[i+1 for i in rc_lines]}")
 
-          print(f"📍 找到 {len(rc_uses)} 处 KSU rc 调用")
-
-          # 第 3 步：定位每个调用所在的函数
-          func_pattern = re.compile(
-              r'\n\s*(?:static\s+)?(?:inline\s+)?(?:int|long|ssize_t|void|bool|unsigned\s+int)\s+(\w+)\s*\(',
-              re.MULTILINE
-          )
-          func_matches = [(m.start(), m.end(), m.group(1)) for m in func_pattern.finditer(content)]
-
-          funcs_to_fix = {}
-          for pos in rc_uses:
-              candidate = None
-              for fstart, fend, fname in func_matches:
-                  if fend < pos:
-                      candidate = (fstart, fend, fname)
-                  else:
+              first = rc_lines[0]
+              # 检查第一处之前 50 行内是否已有 int rc 声明
+              has_decl = False
+              for i in range(max(0, first - 50), first):
+                  if re.search(r'\bint\s+rc\b', lines[i]):
+                      has_decl = True
+                      print(f"  发现已有声明在行 {i+1}: {lines[i].strip()}")
                       break
-              if not candidate:
-                  print(f"⚠️ 位置 {pos} 找不到所属函数")
-                  continue
 
-              _, fend, fname = candidate
-              brace_pos = content.find('{', fend)
-              if brace_pos == -1 or brace_pos > pos:
-                  print(f"⚠️ {fname} 找不到 {{")
-                  continue
-
-              body_start = brace_pos + 1
-              function_head = content[body_start:body_start + 3000]
-              if re.search(r'\bint\s+rc\b', function_head):
-                  print(f"  ✅ {fname} 已有 rc 声明，跳过")
-                  continue
-
-              if fname not in funcs_to_fix:
-                  funcs_to_fix[fname] = body_start
-                  print(f"  📝 需要修复: {fname}")
-
-          for fname, insert_pos in sorted(funcs_to_fix.items(), key=lambda x: -x[1]):
-              content = content[:insert_pos] + '\n\tint rc = 0; /* KSU_FIX */' + content[insert_pos:]
-              print(f"✅ 已在 {fname} 开头插入 int rc = 0;")
+              if has_decl:
+                  print("✅ rc 已有声明，无需修复")
+              else:
+                  indent = re.match(r'(\s*)', lines[first]).group(1)
+                  lines.insert(first, f"{indent}int rc = 0; /* KSU_FIX */\n")
+                  print(f"✅ 已在原第 {first+1} 行前插入 int rc = 0;")
 
           with open(path, "w") as f:
-              f.write(content)
-
-          if not funcs_to_fix:
-              print("ℹ️ 没有需要修复的函数")
+              f.writelines(lines)
           PYEOF
 
           echo ""
-          echo "=== 确认 KSU_FIX 插入位置 ==="
-          grep -n -B2 -A2 "KSU_FIX" security/selinux/hooks.c
+          echo "=== 修复后：确认 KSU_FIX 插入位置 ==="
+          grep -n -B2 -A2 "KSU_FIX" security/selinux/hooks.c || echo "（无 KSU_FIX，可能已修过或无需修复）"
       # ============================================================
 
       - name: 🪛 Extra Kernel Options
